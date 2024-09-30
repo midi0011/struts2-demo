@@ -1,6 +1,7 @@
 package org.example.dao;
 
 import org.example.model.Todo;
+import org.example.util.ErrorResponse;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -28,14 +29,41 @@ public class TodoDao {
     }
 
 
-    public void saveTodo(Todo todo) throws SQLException{
+    public Todo saveTodo(Todo todo) throws SQLException{
         String sql = "INSERT INTO todolist (title, description, status) VALUES (?, ?, ?)";
-        try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)){
+        try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)){
+
+            if (todo.getTitle() == null || todo.getTitle().isEmpty()) {
+                throw new ErrorResponse("Title cannot be null or empty.");
+            }
+            if (todo.getDescription() == null || todo.getDescription().isEmpty()) {
+                throw new ErrorResponse("Description cannot be null or empty.");
+            }
+            if (todo.getStatus() == null || todo.getStatus().isEmpty()) {
+                throw new ErrorResponse("Status cannot be null or empty.");
+            }
+            if (!todo.getStatus().equals("completed") && !todo.getStatus().equals("pending")){
+                throw new ErrorResponse("Status must be completed or pending.");
+            }
+
             pstmt.setString(1, todo.getTitle());
             pstmt.setString(2, todo.getDescription());
             pstmt.setString(3, todo.getStatus());
             pstmt.executeUpdate();
+
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    todo.setId(generatedKeys.getInt(1));
+                } else {
+                    throw new SQLException("Creating todo failed, no ID obtained.");
+                }
+            }
+
+        } catch (SQLException e){
+            System.out.println(e.getMessage());
         }
+
+        return todo;
     }
 
     public List<Todo> todoList() throws SQLException{
@@ -57,6 +85,7 @@ public class TodoDao {
     public Todo getTodo(int id) throws SQLException{
         String sql = "SELECT * FROM todolist WHERE id=?";
         Todo todo = null;
+
         try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)){
             pstmt.setInt(1, id);
             try (ResultSet rs = pstmt.executeQuery()){
@@ -66,15 +95,31 @@ public class TodoDao {
                     todo.setTitle(rs.getString("title"));
                     todo.setDescription(rs.getString("description"));
                     todo.setStatus(rs.getString("status"));
+                } else {
+                    throw new ErrorResponse("Todolist with ID " + id + " not found.");
                 }
             }
         }
         return todo;
     }
 
-    public void updateTodo(Todo todo) throws SQLException{
+    public Todo updateTodo(Todo todo) throws SQLException{
         String sql = "UPDATE todolist SET title=?, description=?, status=? WHERE id=?";
         try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)){
+
+            if (todo.getTitle() == null || todo.getTitle().isEmpty()) {
+                throw new ErrorResponse("Title cannot be null or empty.");
+            }
+            if (todo.getDescription() == null || todo.getDescription().isEmpty()) {
+                throw new ErrorResponse("Description cannot be null or empty.");
+            }
+            if (todo.getStatus() == null || todo.getStatus().isEmpty()) {
+                throw new ErrorResponse("Status cannot be null or empty.");
+            }
+            if (!todo.getStatus().equals("completed") && !todo.getStatus().equals("pending")){
+                throw new ErrorResponse("Status must be completed or pending.");
+            }
+
             pstmt.setString(1, todo.getTitle());
             pstmt.setString(2, todo.getDescription());
             pstmt.setString(3, todo.getStatus());
@@ -82,13 +127,23 @@ public class TodoDao {
 
             pstmt.executeUpdate();
         }
+
+        return todo;
     }
 
-    public void deleteTodo(int id) throws SQLException{
+    public String deleteTodo(int id) throws SQLException{
         String sql = "DELETE FROM todolist WHERE id=?";
         try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)){
             pstmt.setInt(1, id);
-            pstmt.executeUpdate();
+            int affectedRow = pstmt.executeUpdate();
+
+            if (affectedRow == 0){
+                throw new ErrorResponse("Todo with ID " + id + " not found.");
+            }
+        } catch (SQLException e){
+            throw new ErrorResponse(e.getMessage());
         }
+
+        return "id " + id + " have been successfully deleted";
     }
 }
