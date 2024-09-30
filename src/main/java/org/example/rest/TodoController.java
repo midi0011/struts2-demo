@@ -1,115 +1,156 @@
 package org.example.rest;
 
 import com.opensymphony.xwork2.ModelDriven;
-import org.apache.struts2.interceptor.ParameterAware;
 import org.apache.struts2.rest.DefaultHttpHeaders;
 import org.apache.struts2.rest.HttpHeaders;
 import org.example.dao.TodoDao;
 import org.example.model.Todo;
+import org.example.util.ErrorResponse;
 
-import java.sql.SQLException;
-import java.util.Map;
+import java.util.List;
 
-public class TodoController implements ModelDriven<Object>, ParameterAware {
-    private int id;
-    private String title;
-    private String description;
-    private String status;
-    private Object model;
+public class TodoController implements ModelDriven<Object> {
     private TodoDao todoDao = new TodoDao();
-    private Map<String, String[]> parameters;
+    private Todo todo = new Todo();
+    private Object todos;
+    private int id;
+    private String responseMessage;
 
-    // GET	/api/todos
-    public HttpHeaders index() {
-        try {
-            model = todoDao.todoList();
-            System.out.println(model);  // Check if this prints the list
-        } catch (SQLException e) {
-            e.printStackTrace();
-            HttpHeaders headers = new DefaultHttpHeaders("error");
-            headers.setStatus(500);
-            return headers;
-        }
-        System.out.println("GET \t /user");
-        HttpHeaders headers = new DefaultHttpHeaders("success");
-        headers.setStatus(200);
-        return headers;
-    }
+    public static class ErrorResponseMessage {
+        private String message;
 
-    // GET /api/todos/{id}
-    public HttpHeaders show(){
-        try{
-            model = todoDao.getTodo(id);
-            System.out.println(model);
-        } catch (SQLException e){
-            e.printStackTrace();
-            HttpHeaders headers = new DefaultHttpHeaders("error");
-            headers.setStatus(500);
-            return headers;
-        }
-        System.out.println("GET \t /user/" + id);
-        return new DefaultHttpHeaders("show");
-    }
-
-    @Override
-    public void setParameters(Map<String, String[]> parameters) {
-        this.parameters = parameters;
-    }
-
-    // POST /api/todos
-    public HttpHeaders create(){
-        Todo todo = new Todo();
-        todo.setTitle(parameters.get("title")[0]);
-        todo.setDescription(parameters.get("description")[0]);
-        todo.setStatus(parameters.get("status")[0]);
-
-        try{
-            todoDao.saveTodo(todo);
-            model = todo;
-        } catch (SQLException e){
-            e.printStackTrace();
-            HttpHeaders headers = new DefaultHttpHeaders("error");
-            headers.setStatus(500);
-            return headers;
+        public ErrorResponseMessage(String message) {
+            this.message = message;
         }
 
-        System.out.println("POST \t /api/todos");
-        HttpHeaders headers = new DefaultHttpHeaders("success");
-        headers.setStatus(201);
-        return headers;
-    }
+        public String getMessage() {
+            return message;
+        }
 
-
-    public int getId() {
-        return id;
-    }
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-    public void setStatus(String status) {
-        this.status = status;
+        public void setMessage(String message) {
+            this.message = message;
+        }
     }
 
     @Override
     public Object getModel() {
-        return model;
+        return todos != null ? todos : todo;
+    }
+
+    public HttpHeaders create() throws Exception {
+        try{
+            todo = todoDao.saveTodo(todo);
+            HttpHeaders headers = new DefaultHttpHeaders("success");
+            headers.setStatus(200);
+            return headers;
+        } catch (ErrorResponse e){
+            todos = new ErrorResponseMessage(e.getMessage());
+            HttpHeaders headers = new DefaultHttpHeaders("notFound");
+            headers.setStatus(404);
+            return headers;
+        } catch (Exception e){
+            todos = new ErrorResponse("An unexpected error occurred.");
+            HttpHeaders headers = new DefaultHttpHeaders("error");
+            headers.setStatus(500);
+            return headers;
+        }
+    }
+
+    public HttpHeaders index() throws Exception {
+        try{
+            todos = todoDao.todoList();
+            return new DefaultHttpHeaders("list").disableCaching();
+        } catch (Exception e){
+            HttpHeaders headers = new DefaultHttpHeaders("error");
+            headers.setStatus(500);
+            return headers;
+        }
+    }
+
+    public HttpHeaders show(){
+        try {
+            todo = todoDao.getTodo(id);
+            HttpHeaders headers = new DefaultHttpHeaders("success");
+            headers.setStatus(200);
+            return headers;
+        } catch (ErrorResponse e) {
+            HttpHeaders headers = new DefaultHttpHeaders("notFound");
+            headers.setStatus(404);
+            todos = new ErrorResponseMessage(e.getMessage());
+            return headers;
+        } catch (Exception e) {
+            todos = new ErrorResponse("An unexpected error occurred.");
+            HttpHeaders headers = new DefaultHttpHeaders("error");
+            headers.setStatus(500);
+            return headers;
+        }
+    }
+
+    public HttpHeaders update() throws Exception {
+        try{
+            Todo updatedTodo = todoDao.updateTodo(todo);
+            this.todo = updatedTodo;
+
+            HttpHeaders headers = new DefaultHttpHeaders("success");
+            headers.setStatus(200);
+            return headers;
+
+        } catch (ErrorResponse e){
+            HttpHeaders headers = new DefaultHttpHeaders("notFound");
+            headers.setStatus(404);
+            todos = new ErrorResponseMessage(e.getMessage());
+            return headers;
+        }catch (Exception e){
+            todos = new ErrorResponse("An unexpected error occurred.");
+            HttpHeaders headers = new DefaultHttpHeaders("error");
+            headers.setStatus(500);
+            return headers;
+        }
+
+    }
+
+    public HttpHeaders destroy() throws Exception {
+        try{
+            String responseMessage = todoDao.deleteTodo(id);
+            todos = new ErrorResponseMessage(responseMessage);
+
+            // Return success response
+            HttpHeaders headers = new DefaultHttpHeaders("success");
+            headers.setStatus(200);
+            return headers;
+
+        } catch (ErrorResponse e){
+            HttpHeaders headers = new DefaultHttpHeaders("notFound");
+            headers.setStatus(404);
+            todos = new ErrorResponseMessage(e.getMessage());
+            return headers;
+        }catch (Exception e){
+            todos = new ErrorResponse("An unexpected error occurred.");
+            HttpHeaders headers = new DefaultHttpHeaders("error");
+            headers.setStatus(500);
+            return headers;
+        }
+    }
+
+    // Getters and Setters for id, todo, and todos
+    public void setId(int id) {
+        this.id = id;
+    }
+    public int getId() {
+        return id;
+    }
+
+    public Todo getTodo() {
+        return todo;
+    }
+    public void setTodo(Todo todo) {
+        this.todo = todo;
+    }
+
+    public Object getTodos() {
+        return todos;
+    }
+    public void setTodos(List<Todo> todos) {
+        this.todos = todos;
     }
 }
