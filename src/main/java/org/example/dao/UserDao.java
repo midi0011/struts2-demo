@@ -2,10 +2,7 @@ package org.example.dao;
 
 import org.example.model.User;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class UserDao {
 
@@ -19,6 +16,30 @@ public class UserDao {
             throw new RuntimeException(e);
         }
         return DriverManager.getConnection(jdbcUrl, jdbcName, jdbcPassword);
+    }
+
+    public User findUser(String username){
+        User user = null;
+        String query = "SELECT id, username, password FROM users WHERE username = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                user = new User();
+                user.setId(rs.getInt("id"));
+                user.setUsername(rs.getString("username"));
+                user.setPassword(rs.getString("password")); // You should store a hashed password
+            }
+        } catch (Exception e) {
+            e.printStackTrace(); // Handle exceptions appropriately
+        }
+
+        return user;
+
     }
 
 }
