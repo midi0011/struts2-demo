@@ -4,8 +4,12 @@ import com.opensymphony.xwork2.ActionSupport;
 import com.opensymphony.xwork2.conversion.annotations.Conversion;
 import org.example.dao.TodoDao;
 import org.example.model.Todo;
+import org.example.service.TodoService;
+import org.example.service.TodoServiceImpl;
+import org.example.util.ErrorResponse;
 
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 
 @Conversion
@@ -16,11 +20,13 @@ public class TodoAction extends ActionSupport {
     private String description;
     private String status;
     private List<Todo> todos;
+    private TodoService todoService = new TodoServiceImpl();
     private TodoDao todoDao = new TodoDao();
+    private boolean isFormSubmitted = false;
 
     public String list() {
         try {
-            todos = todoDao.todoList();
+            todos = todoService.todoList();
             System.out.println(todos);  // Check if this prints the list
             for (Todo todo : todos) {
                 System.out.println(todo.getTitle()); // Print each title
@@ -33,41 +39,71 @@ public class TodoAction extends ActionSupport {
     }
 
     public String add(){
-        if (title != null && description != null && status !=null){
-            Todo todo = new Todo();
-            todo.setTitle(title);
-            todo.setDescription(description);
-            todo.setStatus(status);
+        isFormSubmitted = true;
+
+        if (isFormSubmitted) {
             try {
-                todoDao.saveTodo(todo);
-            } catch (SQLException e){
+                Todo todo = new Todo();
+                todo.setTitle(title);
+                todo.setDescription(description);
+                todo.setStatus(status);
+                todoService.saveTodo(todo);
+                return SUCCESS;
+            } catch (ErrorResponse e) {
+                addActionError(e.getMessage());
+                return INPUT;
+            }catch (SQLException e) {
                 e.printStackTrace();
                 return ERROR;
             }
-            return SUCCESS;
         }
         return INPUT;
     }
 
-    public String edit(){
-        if (id > 0){
+    public String edit() {
+        if (id > 0) {
             try {
-                Todo todo = todoDao.getTodo(id);
-                if (todo != null){
-                    todo.setTitle(title);
-                    todo.setDescription(description);
-                    todo.setStatus(status);
+                Todo todo = todoService.getTodo(id);
+                if (todo != null) {
+                    this.title = todo.getTitle();
+                    this.description = todo.getDescription();
+                    this.status = todo.getStatus();
                 }
-            } catch (SQLException e){
+            } catch (SQLException e) {
                 e.printStackTrace();
+                return ERROR;
             }
         }
-        return INPUT;
+        return INPUT; // Return to the input form
+    }
+
+    public String update() {
+        if (id > 0) {
+            Todo todo = new Todo();
+            todo.setId(id);
+            todo.setTitle(title);
+            todo.setDescription(description);
+            todo.setStatus(status);
+
+            try {
+                todoService.updateTodo(todo);
+                addActionMessage("Todo updated successfully!");
+            } catch (ErrorResponse e) {
+                e.printStackTrace();
+                addActionError(e.getMessage());
+                return ERROR;
+            } catch (SQLException e) {
+                e.printStackTrace();
+                addActionError(e.getMessage());
+                return ERROR;
+            }
+        }
+        return SUCCESS;
     }
 
     public String delete() {
         try {
-            todoDao.deleteTodo(id);
+            todoService.deleteTodo(id);
         } catch (SQLException e){
             e.printStackTrace();
         }
@@ -81,6 +117,11 @@ public class TodoAction extends ActionSupport {
         } else {
             return "error";
         }
+    }
+
+    // Add this method in TodoAction
+    public List<String> getStatusOptions() {
+        return Arrays.asList("pending", "completed");
     }
 
 

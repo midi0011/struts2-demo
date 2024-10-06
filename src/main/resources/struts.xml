@@ -31,9 +31,27 @@
     <!-- Default extension for REST calls -->
     <constant name="struts.rest.defaultExtension" value="json" />
 
-    <package name="demo" namespace="/" extends="struts-default">
-        <action name="list" class="org.example.action.TodoAction" method="list">
-            <result name="success">/index.jsp</result>
+    <package name="demo" extends="struts-default">
+
+        <action name="listTodos" class="org.example.action.TodoAction" method="list">
+            <result name="success">/listTask.jsp</result>
+            <result name="error">/error.jsp</result>
+        </action>
+        <action name="addTodo" class="org.example.action.TodoAction" method="add">
+            <result name="success" type="redirectAction">listTodos</result>
+            <result name="error">/error.jsp</result>
+            <result name="input">/addTask.jsp</result>
+        </action>
+        <action name="editTodo" class="org.example.action.TodoAction" method="edit">
+            <result name="input">/editTask.jsp</result>
+        </action>
+        <action name="updateTodo" class="org.example.action.TodoAction" method="update">
+            <result name="success" type="redirectAction">listTodos</result>
+            <result name="error">/error.jsp</result>
+        </action>
+        <action name="deleteTodo" class="org.example.action.TodoAction" method="delete">
+            <result name="success" type="redirectAction">listTodos</result> <!-- Redirect back to the list after delete -->
+            <result name="error">/error.jsp</result>
         </action>
 
         <action name="checkConnection" class="org.example.action.TodoAction" method="testConnection">
@@ -43,7 +61,7 @@
     </package>
 
     <package name="demo-api" namespace="/api" extends="rest-default">
-        <action name="todos/*" class="org.example.rest.TodoController">
+        <action name="tasks/*" class="org.example.rest.TodoController">
             <param name="id">{1}</param>
         </action>
     </package>

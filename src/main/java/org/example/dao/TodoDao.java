@@ -110,9 +110,6 @@ public class TodoDao {
             if (todo.getTitle() == null || todo.getTitle().isEmpty()) {
                 throw new ErrorResponse("Title cannot be null or empty.");
             }
-            if (todo.getDescription() == null || todo.getDescription().isEmpty()) {
-                throw new ErrorResponse("Description cannot be null or empty.");
-            }
             if (todo.getStatus() == null || todo.getStatus().isEmpty()) {
                 throw new ErrorResponse("Status cannot be null or empty.");
             }
@@ -126,6 +123,8 @@ public class TodoDao {
             pstmt.setInt(4, todo.getId());
 
             pstmt.executeUpdate();
+        } catch (SQLException e){
+            throw new ErrorResponse("Invalid data: " + e.getMessage());
         }
 
         return todo;
