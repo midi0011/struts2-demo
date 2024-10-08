@@ -55,6 +55,15 @@
     </head>
 <body>
     <h2>Todo</h2>
+    <h3>Welcome to the Todo list <s:property value="#session.user" /></h3>
+
+    <s:if test="#session.user != null">
+            <!-- Logout button -->
+            <form action="<s:url action='logout'/>" method="post">
+                <input type="submit" value="Logout" />
+            </form>
+        </s:if>
+
     <form action="<s:url action='addTodo'/>" method="get">
         <input type="submit" value="Add Todo" />
     </form>
