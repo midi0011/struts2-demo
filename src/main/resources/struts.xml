@@ -31,25 +31,53 @@
     <!-- Default extension for REST calls -->
     <constant name="struts.rest.defaultExtension" value="json" />
 
+    <package name="auth" extends="struts-default">
+        <action name="login" class="org.example.action.LoginAction">
+            <result name="success" type="redirectAction">listTodos</result>
+            <result name="input">/login.jsp</result>
+        </action>
+    </package>
+
     <package name="demo" extends="struts-default">
 
+        <interceptors>
+            <interceptor name="sessionInterceptor" class="org.example.interceptors.SessionInterceptor"/>
+            <interceptor-stack name="secureStack">
+                <interceptor-ref name="sessionInterceptor"/>
+                <interceptor-ref name="defaultStack"/>
+            </interceptor-stack>
+        </interceptors>
+
+        <default-interceptor-ref name="sessionInterceptor" />
+
+        <action name="logout" class="org.example.action.LogoutAction">
+            <result name="success" type="redirectAction">login</result> <!-- Redirect back to the list after delete -->
+            <result name="error">/error.jsp</result>
+        </action>
+
         <action name="listTodos" class="org.example.action.TodoAction" method="list">
+<!--            <interceptor-ref name="sessionInterceptor" />-->
             <result name="success">/listTask.jsp</result>
+            <result name="login" type="redirectAction">login</result>
             <result name="error">/error.jsp</result>
         </action>
         <action name="addTodo" class="org.example.action.TodoAction" method="add">
+<!--            <interceptor-ref name="sessionInterceptor" />-->
             <result name="success" type="redirectAction">listTodos</result>
             <result name="error">/error.jsp</result>
             <result name="input">/addTask.jsp</result>
         </action>
         <action name="editTodo" class="org.example.action.TodoAction" method="edit">
+<!--            <interceptor-ref name="sessionInterceptor" />-->
             <result name="input">/editTask.jsp</result>
         </action>
         <action name="updateTodo" class="org.example.action.TodoAction" method="update">
+<!--            <interceptor-ref name="sessionInterceptor" />-->
             <result name="success" type="redirectAction">listTodos</result>
             <result name="error">/error.jsp</result>
         </action>
         <action name="deleteTodo" class="org.example.action.TodoAction" method="delete">
+<!--            <interceptor-ref name="sessionInterceptor" />-->
             <result name="success" type="redirectAction">listTodos</result> <!-- Redirect back to the list after delete -->
             <result name="error">/error.jsp</result>
         </action>

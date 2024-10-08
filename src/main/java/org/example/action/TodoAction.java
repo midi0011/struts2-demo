@@ -1,5 +1,6 @@
 package org.example.action;
 
+import com.opensymphony.xwork2.ActionContext;
 import com.opensymphony.xwork2.ActionSupport;
 import com.opensymphony.xwork2.conversion.annotations.Conversion;
 import org.example.dao.TodoDao;
@@ -25,12 +26,15 @@ public class TodoAction extends ActionSupport {
     private boolean isFormSubmitted = false;
 
     public String list() {
+        if(ActionContext.getContext().getSession().get("user") == null){
+            return LOGIN;
+        }
+
         try {
             todos = todoService.todoList();
-            System.out.println(todos);  // Check if this prints the list
-            for (Todo todo : todos) {
-                System.out.println(todo.getTitle()); // Print each title
-            }
+//            for (Todo todo : todos) {
+//                System.out.println(todo.getTitle()); // Print each title
+//            }
         } catch (SQLException e) {
             e.printStackTrace();
             return ERROR;

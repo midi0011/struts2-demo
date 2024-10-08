@@ -1,3 +1,5 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
 <%@ taglib prefix="s" uri="/struts-tags" %>
 <html>
 <head>
@@ -80,13 +82,15 @@
 <body>
     <div class="container">
         <h2>Login</h2>
-        <s:form action="loginAction" method="post" class="form-row">
+        <s:form action="login" class="form-row">
 
             <label for="username">Username:</label>
-            <s:textfield name="username" label="Username" required="true"/>
+            <s:textfield name="username" label="Username"/>
+            <s:fielderror fieldName="username" cssClass="error" />
 
             <label for="password">Password:</label>
-            <s:password name="password" label="Password" required="true"/>
+            <s:password name="password" label="Password"/>
+            <s:fielderror fieldName="password" cssClass="error" />
 
             <div class="horizontal-layout">
                 <s:submit value="Login"/>
